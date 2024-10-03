@@ -13,39 +13,26 @@ import net.minecraft.util.Identifier;
 
 public class ModItems {
 
-    public static final RegistryKey<ItemGroup> CUSTOM_ITEM_GROUP_KEY = RegistryKey.of(Registries.ITEM_GROUP.getKey(), Identifier.of(GooberIndustrial.MOD_ID, "item_group"));
-    public static final ItemGroup CUSTOM_ITEM_GROUP = FabricItemGroup.builder()
-            .icon(() -> new ItemStack(ModItems.THE_CREATURE))
-            .displayName(Text.translatable("itemGroup.goober"))
-            .build();
-
     // END STATIC DEFS
 
-    public static void initialize() {
-        // Register the group.
-        Registry.register(Registries.ITEM_GROUP, CUSTOM_ITEM_GROUP_KEY, CUSTOM_ITEM_GROUP);
+    // START ITEMS
 
-        // Register items to the custom item group.
-        ItemGroupEvents.modifyEntriesEvent(CUSTOM_ITEM_GROUP_KEY).register(itemGroup -> {
-            itemGroup.add(ModItems.THE_CREATURE);
-        });
-    }
+    public static final Item PANKONIUM_INGOT = register(
+            new Item(new Item.Settings()),
+            "pankonium_ingot"
+    );
+
+    // END ITEMS
 
     public static Item register(Item item, String id) {
         // Create the identifier for the item.
         Identifier itemID = Identifier.of(GooberIndustrial.MOD_ID, id);
-
         // Register the item.
         Item registeredItem = Registry.register(Registries.ITEM, itemID, item);
-
         // Return the registered item!
         return registeredItem;
     }
 
-    // START ITEMS
-
-    public static final Item THE_CREATURE = register(
-            new Item(new Item.Settings()),
-            "the_creature"
-    );
+    public static void initialize() {
+    }
 }
