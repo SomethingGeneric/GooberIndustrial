@@ -11,6 +11,7 @@ import java.util.List;
 public class PickupNearbyItemsGoal extends Goal {
     private final GoobotEntity goobotEntity;
     private ItemEntity targetItem;
+    private int ticksAttempt = 0;
 
     public PickupNearbyItemsGoal(GoobotEntity goobotEntity) {
         this.goobotEntity = goobotEntity;
@@ -19,14 +20,12 @@ public class PickupNearbyItemsGoal extends Goal {
 
     @Override
     public boolean canStart() {
-        // Define the radius for searching nearby items
-        Box searchBox = goobotEntity.getBoundingBox().expand(5.0D, 2.0D, 5.0D); // A 5x2x5 radius around the entity
+        Box searchBox = goobotEntity.getBoundingBox().expand(5.0D, 2.0D, 5.0D);
         List<ItemEntity> nearbyItems = goobotEntity.getEntityWorld().getEntitiesByClass(ItemEntity.class, searchBox, itemEntity -> !itemEntity.cannotPickup());
 
         if (!nearbyItems.isEmpty()) {
-            // Set the first item found as the target
-            targetItem = nearbyItems.getFirst();
-            return true;
+            targetItem = nearbyItems.getFirst();  // Corrected way to get the first element
+            return targetItem != null;  // Ensure targetItem is not null
         }
         return false;
     }
@@ -40,33 +39,42 @@ public class PickupNearbyItemsGoal extends Goal {
 
     @Override
     public boolean shouldContinue() {
-        // Continue if the item is still valid and exists
         return targetItem != null && targetItem.isAlive() && !targetItem.cannotPickup() &&
-                goobotEntity.squaredDistanceTo(targetItem) > 1.5D;
+                goobotEntity.squaredDistanceTo(targetItem) > 2.0D;
     }
 
     @Override
     public void tick() {
+        if (targetItem == null) {
+            stop();
+            return;
+        }
+
+        ticksAttempt++;
+
+        if (ticksAttempt > 100) {
+            stop();
+            return;
+        }
+
+        // Check targetItem again before using it
         if (targetItem != null) {
-            // Move towards the item
             goobotEntity.getNavigation().startMovingTo(targetItem.getX(), targetItem.getY(), targetItem.getZ(), 1.0D);
 
-            // If the entity is close enough, pick up the item
-            if (goobotEntity.squaredDistanceTo(targetItem) < 1.5D) {
+            if (goobotEntity.squaredDistanceTo(targetItem) < 2.0D) {
                 ItemStack itemStack = targetItem.getStack();
-                // Handle picking up the item (similar to how PlayerEntity picks up items)
 
                 if (goobotEntity.tryPickupItem(itemStack)) {
                     targetItem.discard();
+                    targetItem = null;
                 }
-
-                targetItem = null; // Clear the target once the item is picked up
             }
         }
     }
 
     @Override
     public void stop() {
-        targetItem = null; // Clear the target item when the goal is stopped
+        targetItem = null;
+        ticksAttempt = 0; // Reset attempt counter
     }
 }

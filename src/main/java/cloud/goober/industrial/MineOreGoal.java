@@ -10,6 +10,7 @@ import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import org.slf4j.Logger;
 
 import java.util.EnumSet;
 
@@ -17,6 +18,13 @@ public class MineOreGoal extends Goal {
     private final GoobotEntity goobotEntity;
     private final World world;
     private BlockPos targetOrePos;
+    private int ticksAttempt = 0;
+
+    public final Logger LOGGER = GooberIndustrial.LOGGER;
+
+    private void log(String text) {
+        LOGGER.info("GBT @ {}: {}", goobotEntity.getBlockPos(), text);
+    }
 
     public MineOreGoal(GoobotEntity goobotEntity) {
         this.goobotEntity = goobotEntity;
@@ -44,8 +52,11 @@ public class MineOreGoal extends Goal {
         // Check if the entity is holding a pickaxe in the main hand
         ItemStack mainHandItem = goobotEntity.getMainHandStack();
         if (!correctItemInHand(mainHandItem)) {
+            log("Not starting to mine, wrong item in hand");
             return false;
         }
+
+        log("Starting to mine. Looking for targets");
 
         // Find nearby ore
         BlockPos pos = goobotEntity.getBlockPos();
@@ -58,10 +69,12 @@ public class MineOreGoal extends Goal {
                     goobotEntity.manager.sendMessage(Text.of("We're going mining!"));
                 }
 
+                log("Target found!");
                 return true;
             }
         }
 
+        log("No targets found, giving up mining goal");
         return false;
     }
 
@@ -69,6 +82,7 @@ public class MineOreGoal extends Goal {
     public void start() {
         // Move the entity to the target ore position
         if (targetOrePos != null) {
+            log("Have a target position, moving to it");
             goobotEntity.getNavigation().startMovingTo(targetOrePos.getX(), targetOrePos.getY(), targetOrePos.getZ(), 1.0D);
         }
     }
@@ -79,6 +93,12 @@ public class MineOreGoal extends Goal {
         boolean keepGoing = targetOrePos != null && targetThisBlock(world.getBlockState(targetOrePos)) &&
                 correctItemInHand(goobotEntity.getMainHandStack());
 
+        if (keepGoing) {
+            log("Continuing mining goal");
+        } else {
+            log("Ending mining goal");
+        }
+
         if (!keepGoing && goobotEntity.manager != null) {
             goobotEntity.manager.sendMessage(Text.of("No more mining. :C"));
         }
@@ -88,18 +108,32 @@ public class MineOreGoal extends Goal {
 
     @Override
     public void tick() {
+
+        ticksAttempt += 1;
+
+        if (ticksAttempt > 500) {
+            log("Ending goal due to timeout");
+            stop();
+        }
+
         if (targetOrePos != null) {
             double distanceToOre = goobotEntity.squaredDistanceTo(targetOrePos.getX(), targetOrePos.getY(), targetOrePos.getZ());
-            if (distanceToOre < 2.0D) {
+            if (distanceToOre < 4.0D) {
                 // Mine the ore
                 world.breakBlock(targetOrePos, true);
                 targetOrePos = null;
+                stop();
+            } else {
+                goobotEntity.getNavigation().startMovingTo(targetOrePos.getX(), targetOrePos.getY(), targetOrePos.getZ(), 1.0D);
             }
+        } else {
+            stop();
         }
     }
 
     @Override
     public void stop() {
+        log("Ending mining goal");
         targetOrePos = null;
     }
 }

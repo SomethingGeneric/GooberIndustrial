@@ -14,10 +14,13 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.*;
+import net.minecraft.server.world.ChunkTicketType;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.minecraft.entity.SpawnGroup;
@@ -256,6 +259,33 @@ public class GoobotEntity extends PathAwareEntity implements Inventory {
 
         // Return PASS to allow other interactions (like opening GUI or riding)
         //return super.interactMob(player, hand);
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+
+        // Forced Chunk Loading
+        // Ensure the entity is in a ServerWorld (as client worlds don't handle chunk loading)
+        if (!this.getWorld().isClient && this.getWorld() instanceof ServerWorld serverWorld) {
+            // Get the chunk coordinates where the entity is currently located
+            ChunkPos chunkPos = new ChunkPos(this.getBlockPos());
+
+            // Create a ticket for this chunk to force it to stay loaded
+            serverWorld.getChunkManager().addTicket(ChunkTicketType.FORCED, chunkPos, 1, ChunkPos.ORIGIN);
+        }
+
+    }
+
+    @Override
+    public void remove(RemovalReason reason) {
+        // When the entity is removed, also release the chunk
+        if (!this.getWorld().isClient && this.getWorld() instanceof ServerWorld serverWorld) {
+            ChunkPos chunkPos = new ChunkPos(this.getBlockPos());
+            serverWorld.getChunkManager().removeTicket(ChunkTicketType.FORCED, chunkPos, 1, ChunkPos.ORIGIN);
+        }
+
+        super.remove(reason);
     }
 
     // END METHODS
