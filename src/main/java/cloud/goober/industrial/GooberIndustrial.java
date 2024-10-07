@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
 import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
@@ -56,6 +57,9 @@ public class GooberIndustrial implements ModInitializer {
 
 		LOGGER.info("Attempting worldgen modification");
 		BiomeModifications.addFeature(BiomeSelectors.foundInOverworld(), GenerationStep.Feature.UNDERGROUND_ORES, CUSTOM_ORE_PLACED_KEY);
+
+		LOGGER.info("Doing entity registers");
+		FabricDefaultAttributeRegistry.register(GoobotEntity.GOOBOT, GoobotEntity.createCustomPlayerAttributes());
 
 		LOGGER.info("We're goobin");
 
