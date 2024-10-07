@@ -1,0 +1,3 @@
+accessWidener v2 named
+accessible class net/minecraft/entity/mob/MobEntity
+extendable method net/minecraft/entity/mob/MobEntity interact (Lnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/util/Hand;)Lnet/minecraft/util/ActionResult;

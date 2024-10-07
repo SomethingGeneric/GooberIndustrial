@@ -9,24 +9,25 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.*;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.minecraft.entity.SpawnGroup;
 
-import static net.minecraft.component.type.AttributeModifierSlot.ARMOR;
-
 public class GoobotEntity extends PathAwareEntity implements Inventory {
     private final DefaultedList<ItemStack> inventory = DefaultedList.ofSize(36, ItemStack.EMPTY);
     private final DefaultedList<ItemStack> armorItems = DefaultedList.ofSize(4, ItemStack.EMPTY);
     private final DefaultedList<ItemStack> handItems = DefaultedList.ofSize(2, ItemStack.EMPTY);
+
+    public PlayerEntity manager = null;
 
     public GoobotEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
@@ -43,9 +44,11 @@ public class GoobotEntity extends PathAwareEntity implements Inventory {
     @Override
     protected void initGoals() {
         this.goalSelector.add(0, new SwimGoal(this));
-        this.goalSelector.add(1, new EscapeDangerGoal(this, 1.25D));
-        this.goalSelector.add(4, new WanderAroundFarGoal(this, 0.85D));
-        this.goalSelector.add(6, new LookAroundGoal(this));
+        //this.goalSelector.add(1, new EscapeDangerGoal(this, 1.25D));
+        this.goalSelector.add(2, new PickupNearbyItemsGoal(this));
+        this.goalSelector.add(3, new MineOreGoal(this));
+        //this.goalSelector.add(4, new WanderAroundFarGoal(this, 0.85D));
+        //this.goalSelector.add(6, new LookAroundGoal(this));
     }
 
     // Inventory methods
@@ -77,9 +80,25 @@ public class GoobotEntity extends PathAwareEntity implements Inventory {
             return this.armorItems.get(slot - 36);
         } else if (slot == 40) {
             return this.handItems.get(1); // Offhand
+        } else if (slot == 41) {
+            return this.handItems.getFirst(); // Main hand??
         } else {
             return ItemStack.EMPTY;
         }
+    }
+
+    @Override
+    public void setStack(int slot, ItemStack stack) {
+        if (slot >= 0 && slot < 36) {
+            this.inventory.set(slot, stack);
+        } else if (slot >= 36 && slot < 40) {
+            this.armorItems.set(slot - 36, stack);
+        } else if (slot == 40) {
+            this.handItems.set(1, stack); // Offhand
+        } else if (slot == 41) {
+            this.handItems.set(0, stack);
+        }
+        this.markDirty();
     }
 
     @Override
@@ -96,26 +115,40 @@ public class GoobotEntity extends PathAwareEntity implements Inventory {
         return Inventories.removeStack(this.getInventoryStacks(), slot);
     }
 
-    @Override
-    public void setStack(int slot, ItemStack stack) {
-        if (slot >= 0 && slot < 36) {
-            this.inventory.set(slot, stack);
-        } else if (slot >= 36 && slot < 40) {
-            this.armorItems.set(slot - 36, stack);
-        } else if (slot == 40) {
-            this.handItems.set(1, stack); // Offhand
+    private int getEmptyStack() {
+        for (int c = 0; c < 37; c++) {
+            ItemStack foo = getStack(c);
+            if (foo.isEmpty()) {
+                return c;
+            }
         }
-        this.markDirty();
+
+        return 0; // TODO: What do if all in 0-36 are full?
     }
 
     @Override
     public void markDirty() {
-        // what should this be doing?
+        // What??
+        return;
     }
 
     @Override
     public boolean canPlayerUse(PlayerEntity player) {
         return true; // Or implement your own logic
+    }
+
+    public boolean canPickupItem(ItemStack stack) {
+        // Determine whether the entity can pick up the item (optional filtering logic)
+        return true; // For now, always true
+    }
+
+    public boolean tryPickupItem(ItemStack stack) {
+        if (this.canPickupItem(stack)) {
+            int slot = getEmptyStack();
+            this.setStack(slot, stack);
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -197,6 +230,35 @@ public class GoobotEntity extends PathAwareEntity implements Inventory {
         }
     }
 
+    @Override
+    public ActionResult interactMob(PlayerEntity player, Hand hand) {
+        // Get the item in the player's hand
+        ItemStack playerItemStack = player.getStackInHand(hand);
+
+        if (!playerItemStack.isEmpty()) {
+            if (!getStack(41).isEmpty()) { // am I holding something
+                ItemStack myCurrentItem = getStack(41);
+                player.setStackInHand(hand, myCurrentItem.copy());
+                setStack(41, playerItemStack);
+            } else { // I am not holding anything
+                setStack(41, playerItemStack);
+                player.setStackInHand(hand, ItemStack.EMPTY);
+            }
+        } else {
+            ItemStack foo = getStack(41);
+            player.setStackInHand(hand, foo.copy());
+            setStack(41, ItemStack.EMPTY);
+        }
+
+        manager = player;
+
+        return ActionResult.SUCCESS; // Return SUCCESS if the interaction was handled
+
+        // Return PASS to allow other interactions (like opening GUI or riding)
+        //return super.interactMob(player, hand);
+    }
+
+    // END METHODS
     public static final EntityType<GoobotEntity> GOOBOT = Registry.register(
             Registries.ENTITY_TYPE,
             Identifier.of(GooberIndustrial.MOD_ID, "goobot"),
