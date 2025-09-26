@@ -1,7 +1,6 @@
 package cloud.goober.industrial;
 
 import net.minecraft.block.BlockState;
-import net.minecraft.block.BlockTypes;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.item.ItemStack;
