@@ -1,5 +1,5 @@
 plugins {
-	id 'java'
+	id 'fabric-loom' version '1.8.13'
 	id 'maven-publish'
 }
 
@@ -16,22 +16,30 @@ repositories {
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
-	mavenCentral()
+}
+
+loom {
+	splitEnvironmentSourceSets()
+
+	mods {
+		"goober-industrial" {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+		}
+	}
+
+	accessWidenerPath = file("src/main/resources/goober-industrial.accesswidener")
+
 }
 
 dependencies {
-	// Note: This is a temporary fix to get the project compiling
-	// The full Fabric mod functionality requires fabric-loom plugin which needs maven.fabricmc.net
 	// To change the versions see the gradle.properties file
-	//minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	//mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	//modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
-	//modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	
-	// Temporary placeholder dependencies for compilation
-	compileOnly 'org.slf4j:slf4j-api:1.7.36'
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	
 }
 

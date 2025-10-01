@@ -4,24 +4,7 @@ pluginManagement {
 			name = 'Fabric'
 			url = 'https://maven.fabricmc.net/'
 		}
-		maven {
-			name = 'JitPack'
-			url = 'https://jitpack.io'
-		}
 		mavenCentral()
 		gradlePluginPortal()
-	}
-}
-dependencyResolutionManagement {
-	repositories {
-		maven {
-			name = 'Fabric'
-			url = 'https://maven.fabricmc.net/'
-		}
-		maven {
-			name = 'JitPack'
-			url = 'https://jitpack.io'
-		}
-		mavenCentral()
 	}
 }
